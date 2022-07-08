@@ -3,60 +3,96 @@
 #include <tuple>
 #include <optional>
 #include <string>
+#include <cmath>
 
 using namespace std;
 
-double trim(char* s){
-    int i;
-    while(isspace(*s)) s++;
-    for(i = strlen(s) - 1; isspace(s[i]); i--) s[i + 1] = '\0';
-    return strtod(s,&s);
+tuple<double, int>* append(tuple<double, int>* existing, tuple<double, int> added){
+    tuple<double, int> newarr[sizeof(existing)/sizeof(tuple<double, int>) + 1];
+    memcpy(newarr, existing, sizeof(existing));
+    memcpy(newarr + sizeof(existing), &added, sizeof(tuple<double, int>));
+    return newarr;
 }
 
-tuple<char*, char*, int> spliter2(char* tosplit, int i, int op){
-    static char str0[10],str1[10];
-    memcpy(str0, tosplit, i * sizeof(char));
-    memcpy(str1, tosplit + i + 1, (strlen(tosplit) - i - 1) * sizeof(char));
-    return {str0, str1, op};
-}
-
-double calc(tuple<char*, char*, int> set){
-    while(get<2>(set) == 0) return (trim(get<0>(set)) * trim(get<1>(set)));
-    while(get<2>(set) == 1) return (trim(get<0>(set)) / trim(get<1>(set)));
-    while(get<2>(set) == 2) return (trim(get<0>(set)) + trim(get<1>(set)));
-    while(get<2>(set) == 3) return (trim(get<0>(set)) - trim(get<1>(set)));
-    return 0.0;
-}
-
-optional<tuple<char*, char*, int>> spliter(char* tosplit){
-    for (int i = 0; i < strlen(tosplit); i++)
+optional<tuple<double, int>*> tokener(char* inputString){
+    tuple<double, int> tokens[100];
+    int last = 0;
+    double mem = 0;
+    double digitcount = 1;
+    for (int i = 0; i < strlen(inputString); i++)
     {
-        const char c = tosplit[i];
-        while(c == '*'){
-            return spliter2(tosplit, i, 0);
-        } 
-        while(c == '/'){
-            return spliter2(tosplit, i, 1);
-        } 
-        while(c == '+'){
-            return spliter2(tosplit, i, 2);
-        } 
-        while(c == '-'){
-            return spliter2(tosplit, i, 3);
-        } 
+        const char c = inputString[i];
+        if(isdigit(c)){
+            mem += digitcount * (int)c;
+            digitcount *= 10; 
+            continue;
+        }
+        if(c == '+'){
+            tuple<double, int> number = {mem, 0};
+            append(tokens, number);
+            digitcount = 1;
+            mem = 0;
+            continue;
+        }
+        if(c == '-'){
+            tuple<double, int> number = {mem, 1};
+            append(tokens, number);
+            digitcount = 1;
+            mem = 0;
+            continue;
+        }
+        if(c == '*'){
+            tuple<double, int> number = {mem, 2};
+            append(tokens, number);
+            digitcount = 1;
+            mem = 0;
+            continue;
+        }
+        if(c == '/'){
+            tuple<double, int> number = {mem, 3};
+            append(tokens, number);
+            digitcount = 1;
+            mem = 0;
+            continue;
+        }
+        if(c == '^'){
+            tuple<double, int> number = {mem, 4};
+            append(tokens, number);
+            digitcount = 1;
+            mem = 0;
+            continue;
+        }
+        // if(c == '('){
+        //     tuple<double, int> number = {mem, 5};
+        //     digitcount = 1;
+        //     mem = 0;
+        //     continue;
+        // }
+        // if(c == ')'){
+        //     tuple<double, int> number = {mem, 6};
+        //     digitcount = 1;
+        //     mem = 0;
+        //     continue;
+        // }
+        if(c == '.'){
+            digitcount = 1;
+            digitcount /= 10;
+            continue;
+        }
     }
     return nullopt;
 }
 
 int main(){
-    char input[10];
+    char input[20];
     printf("Hello, I'm Call Culator\n");
     printf("Write here your equation:\n");
-    scanf("%s", &input);
-    optional<tuple<char*, char*, int>> tuple = spliter(input);
-    if(tuple != nullopt){
-        //printf("%s %s %d \n", get<0>(tuple.value()), get<1>(tuple.value()), get<2>(tuple.value()));
-        printf("%.9g", calc(tuple.value()));
+    scanf("%19[^\n]", &input);
+    optional<tuple<double, int>*> tokens = tokener(input);
+    if(tokens != nullopt){
+        for(int i = 0; i < sizeof(tokens)/sizeof(tuple<double, int>); i++){
+            printf("%d. %g and %d", i, get<0>(tokens.value()[i]), get<1>(tokens.value()[i]));
+        }
     }
     return 0;
 } 
